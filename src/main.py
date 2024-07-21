@@ -4,15 +4,28 @@ import json
 
 from news import NewsManager
 from dotenv import load_dotenv
+from vectordb import VectorDB
 
 load_dotenv()
 
-manager = NewsManager(os.getenv("NEWS_KEY"))
+db = VectorDB(os.getenv("CLUSTER_URL"),
+            os.getenv("WEAVIATE_KEY"),
+            os.getenv("HUGGING_FACE_KEY")) 
 
-manager.GetArticlesByTopic(sys.argv[1])
+db.Client.collections.delete("news")
 
-print(json.dumps(manager.Articles[0], indent=2))
+db.Connect().Setup()
 
-sys.stdout.write(manager.Articles[0]) 
+manager = NewsManager(os.getenv("NEWS_KEY"), db)
+manager.GetTopArticles()
 
+for data in db.DefaultCollection.iterator():
+    print(data.properties)
+
+# objects = manager.QueryNews(sys.argv[1]).objects
+
+# for object in objects:
+#     for key in object.properties.keys():
+#         print(key, ": ", object.properties.get(key))
+#     print('\n')
 
