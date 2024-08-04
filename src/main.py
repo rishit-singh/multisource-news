@@ -6,26 +6,31 @@ from news import NewsManager
 from dotenv import load_dotenv
 from vectordb import VectorDB
 
+from embeddings import EmbeddingManager
+
 load_dotenv()
 
-db = VectorDB(os.getenv("CLUSTER_URL"),
-            os.getenv("WEAVIATE_KEY"),
-            os.getenv("HUGGING_FACE_KEY")) 
+db = None
+# VectorDB(os.getenv("CLUSTER_URL"),
+#             os.getenv("WEAVIATE_KEY"),
+#             os.getenv("HUGGING_FACE_KEY")) 
 
-db.Client.collections.delete("news")
-
-db.Connect().Setup()
+# db.Connect().Setup()
 
 manager = NewsManager(os.getenv("NEWS_KEY"), db)
-manager.GetTopArticles()
+embeddings = EmbeddingManager(os.getenv("AZURE_OPENAI_KEY"), 
+                              os.getenv("AZURE_OPENAI_ENDPOINT"), 
+                              os.getenv("AZURE_OPENAI_VERSION"), 
+                              "text-embedding-ada-002") 
 
-for data in db.DefaultCollection.iterator():
-    print(data.properties)
+print(len(embeddings.CreateEmbeddings(json.dumps(manager.GetAllArticles()["articles"][0:4]))))
 
-# objects = manager.QueryNews(sys.argv[1]).objects
+
+# objects = manager.QueryNews(sys.argv[1], 2).objects
 
 # for object in objects:
 #     for key in object.properties.keys():
 #         print(key, ": ", object.properties.get(key))
 #     print('\n')
 
+# print(json.dumps(manager.GetAllArticles(), indent=2))

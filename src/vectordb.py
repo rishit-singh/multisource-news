@@ -82,8 +82,9 @@ class VectorDB:
         return self.DefaultCollection.data.exists(uuid=uuid)
 
     def QueryCollection(self, collectionName: str, query: str, limit=5):
-        collection = self.Client.collections.get(collectionName)
-        return collection.query.near_text(query=query, limit=limit)
+        collection = self.DefaultCollection if collectionName == self.DefaultCollectionName else self.Client.collections.get(collectionName)
+    
+        return collection.query.near_text(query=query, distance=1, limit=limit)
 
     def Connect(self):
         self.Client.connect()

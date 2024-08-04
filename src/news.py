@@ -19,11 +19,20 @@ class NewsManager:
 
         return self.Articles
 
+    def GetContent(self, article: dict):
+        return
 
-    def QueryNews(self, query: str):
-        return self.DB.QueryCollection("News", query)
+    def QueryNews(self, query: str, max: int):
+        return self.DB.QueryCollection("News", query, limit=max)
+
+    def GetTopSources(self) -> list[dict]:
+        return [source["id"] for source in self.Client.get_sources(language="en")["sources"]]
+
+    def GetAllArticles(self):
+        return self.Client.get_everything(sources=",".join(self.GetTopSources()))
 
     def GetArticlesByTopic(self, topic: str):
-        return self.Client.get_everything(qintitle=topic)["articles"]
+        self.Articles += self.Client.get_everything(language="en")["articles"]
         
-    
+        return self.Articles
+        
