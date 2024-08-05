@@ -1,10 +1,14 @@
 import os
 import json
 import weaviate
+import hashlib
+
 from weaviate.auth import AuthApiKey
 from weaviate.classes.config import Configure
 from weaviate.classes.config import Property, DataType
-
+from pinecone import Pinecone
+from typing import Any
+from embeddings import EmbeddingManager
 
 class VectorDB:
     def __init__(
@@ -92,3 +96,44 @@ class VectorDB:
 
     def Disconnect(self):
         self.Client.close()
+
+class PineconeObject:
+    def __init__(self, metadata: dict, payload: Any, embeddings: list[float]):
+        self.Metadata = metadata
+        self.Payload = payload
+        self.Embeddings = embeddings  
+
+    def ToDict(self):
+        return {
+            "metadata": self.Metadata,
+            "values": self.Embeddings,
+            "id": hashlib.sha256(json.dumps(self.Metadata).encode("utf-8")).hexdigest() 
+        }
+
+class PineconeDB:
+    def __init__(self, apiKey: str, embeddingManager: EmbeddingManager, index: str = None):
+        self.Client = Pinecone(api_key=apiKey) 
+        self.Index = None   
+        self.EmbeddingManager = embeddingManager
+
+        if (index):
+            self.Index = self.Client.Index(index)
+
+    def Connect(self, index: str) -> bool:
+        self.Index = self.Client.Index(index)
+
+        return True
+    
+    def Insert(self, payload: Any, metadata: dict, namespace: str = "main") -> list[PineconeObject] | None:
+        embeddings = [ element.model_dump()["embedding"] for element in self.EmbeddingManager.CreateEmbeddings(json.dumps(payload))]
+        
+        objects = [  PineconeObject(metadata, payload, embedding) for embedding in embeddings] 
+
+        self.Index.upsert(
+           vectors = [
+                object.ToDict() for object in objects 
+           ],
+           namespace=namespace
+        )        
+
+        return objects 

@@ -4,13 +4,18 @@ import json
 
 from news import NewsManager
 from dotenv import load_dotenv
-from vectordb import VectorDB
+from vectordb import VectorDB, PineconeDB
 
 from embeddings import EmbeddingManager
 
 load_dotenv()
 
-db = None
+embeddings = EmbeddingManager(os.getenv("AZURE_OPENAI_KEY"), 
+                              os.getenv("AZURE_OPENAI_ENDPOINT"), 
+                              os.getenv("AZURE_OPENAI_VERSION"), 
+                              "text-embedding-ada-002") 
+
+db = PineconeDB(os.getenv("PINECONE_KEY"), embeddings, "news")
 # VectorDB(os.getenv("CLUSTER_URL"),
 #             os.getenv("WEAVIATE_KEY"),
 #             os.getenv("HUGGING_FACE_KEY")) 
@@ -18,13 +23,9 @@ db = None
 # db.Connect().Setup()
 
 manager = NewsManager(os.getenv("NEWS_KEY"), db)
-embeddings = EmbeddingManager(os.getenv("AZURE_OPENAI_KEY"), 
-                              os.getenv("AZURE_OPENAI_ENDPOINT"), 
-                              os.getenv("AZURE_OPENAI_VERSION"), 
-                              "text-embedding-ada-002") 
 
-print(len(embeddings.CreateEmbeddings(json.dumps(manager.GetAllArticles()["articles"][0:4]))))
 
+print(db.Insert({"Foo": "Bar"}, {"id": "foo", "payload": "bar"}))
 
 # objects = manager.QueryNews(sys.argv[1], 2).objects
 
