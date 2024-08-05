@@ -1,18 +1,21 @@
 from newsapi import NewsApiClient
 from typing import Any
-from vectordb import VectorDB
+from vectordb import VectorDB, PineconeDB
 
 class NewsManager:
-    def __init__(self, apiKey: str, db: VectorDB):
+    def __init__(self, apiKey: str, db: PineconeDB):
         self.Articles: list[Any] = []
         self.Client = NewsApiClient(api_key=apiKey)
-        self.DB: VectorDB = db
+        self.DB: PineconeDB = db
     
     def CreateEmbeddings(self):
         if (len(self.Articles) < 1):
-            self.GetTopArticles()
+            self.Articles = self.GetAllArticles()
+        
+        print(self.Articles)
 
-        return self.DB.CreateRecords(self.Articles)
+        for article in self.Articles:
+            self.DB.Insert(article["title"], article, "main")
 
     def GetTopArticles(self):
         self.Articles += self.Client.get_top_headlines(country="us")["articles"]
@@ -29,7 +32,7 @@ class NewsManager:
         return [source["id"] for source in self.Client.get_sources(language="en")["sources"]]
 
     def GetAllArticles(self):
-        return self.Client.get_everything(sources=",".join(self.GetTopSources()))
+        return self.Client.get_everything(sources=",".join(self.GetTopSources()))["articles"]
 
     def GetArticlesByTopic(self, topic: str):
         self.Articles += self.Client.get_everything(language="en")["articles"]

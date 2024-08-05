@@ -125,15 +125,24 @@ class PineconeDB:
         return True
     
     def Insert(self, payload: Any, metadata: dict, namespace: str = "main") -> list[PineconeObject] | None:
-        embeddings = [ element.model_dump()["embedding"] for element in self.EmbeddingManager.CreateEmbeddings(json.dumps(payload))]
+        def StringifyMetadata(metadata: dict):
+            for key in metadata:
+                val = metadata[key]
+
+                if (not (type(val) in [int, float, str, bool])):
+                    metadata[key] = str(val)
+            return metadata
         
+        metadata = StringifyMetadata(metadata)
+
+        embeddings = [ element.model_dump()["embedding"] for element in self.EmbeddingManager.CreateEmbeddings(json.dumps(payload))]
+
         objects = [  PineconeObject(metadata, payload, embedding) for embedding in embeddings] 
 
         self.Index.upsert(
            vectors = [
                 object.ToDict() for object in objects 
            ],
-           namespace=namespace
-        )        
+           namespace=namespace)        
 
         return objects 

@@ -25,8 +25,7 @@ db = PineconeDB(os.getenv("PINECONE_KEY"), embeddings, "news")
 manager = NewsManager(os.getenv("NEWS_KEY"), db)
 
 
-print(db.Insert({"Foo": "Bar"}, {"id": "foo", "payload": "bar"}))
-
+manager.CreateEmbeddings()
 # objects = manager.QueryNews(sys.argv[1], 2).objects
 
 # for object in objects:
