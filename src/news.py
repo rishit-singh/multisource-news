@@ -26,7 +26,7 @@ class NewsManager:
         return
 
     def QueryNews(self, query: str, max: int):
-        return self.DB.QueryCollection("News", query, limit=max)
+        return self.DB.Query(query, max)
 
     def GetTopSources(self) -> list[dict]:
         return [source["id"] for source in self.Client.get_sources(language="en")["sources"]]

@@ -25,7 +25,7 @@ db = PineconeDB(os.getenv("PINECONE_KEY"), embeddings, "news")
 manager = NewsManager(os.getenv("NEWS_KEY"), db)
 
 
-manager.CreateEmbeddings()
+print(json.dumps([match["metadata"] for match in manager.QueryNews(sys.argv[1], 1).to_dict()["matches"]], indent=2))
 # objects = manager.QueryNews(sys.argv[1], 2).objects
 
 # for object in objects:

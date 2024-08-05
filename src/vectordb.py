@@ -118,6 +118,12 @@ class PineconeDB:
 
         if (index):
             self.Index = self.Client.Index(index)
+    
+    def Query(self, query: str, k: int = 10, namespace="main"):
+        queryEmbedding = self.EmbeddingManager.CreateEmbeddings(query)[0].embedding
+
+        return self.Index.query(namespace=namespace, vector=queryEmbedding, top_k=k, include_values=True, include_metadata=True)
+        
 
     def Connect(self, index: str) -> bool:
         self.Index = self.Client.Index(index)
