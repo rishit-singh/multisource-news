@@ -6,7 +6,7 @@ import html.parser
 import time
 
 import requests
-from gptcontext import GPTContext, GPTMessage
+# from gptcontext import GPTContext, GPTMessage
 from tinytune.prompt import PromptJob, prompt_job
 
 from tinytune import Pipeline
@@ -304,22 +304,22 @@ def GetOpinions(id: str, context: WebGroqContext, prevResult: str):
     )
 
 
-start = time.time()
+# start = time.time()
 
-pipeline = Pipeline(extractContext)
+# pipeline = Pipeline(extractContext)
 
-(
-    pipeline.AddJob(Setup)
-    .AddJob(Fetch)
-    .AddJob(GetOpinions)
-    .AddJob(Compare)
-    .AddJob(Jsonify)
-    .Run(stream=True)
-)
+# (
+#     pipeline.AddJob(Setup)
+#     .AddJob(Fetch)
+#     .AddJob(GetOpinions)
+#     .AddJob(Compare)
+#     .AddJob(Jsonify)
+#     .Run(stream=True)
+# )
 
-print(
-    "\n\nFinal parsed: ",
-    json.dumps(json.loads(pipeline.Results["jsonify"][-1]), indent=2),
-)
+# print(
+#     "\n\nFinal parsed: ",
+#     json.dumps(json.loads(pipeline.Results["jsonify"][-1]), indent=2),
+# )
 
-print("Time elapsed: ", time.time() - start)
+# print("Time elapsed: ", time.time() - start)

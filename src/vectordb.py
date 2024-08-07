@@ -123,7 +123,6 @@ class PineconeDB:
         queryEmbedding = self.EmbeddingManager.CreateEmbeddings(query)[0].embedding
 
         return self.Index.query(namespace=namespace, vector=queryEmbedding, top_k=k, include_values=True, include_metadata=True)
-        
 
     def Connect(self, index: str) -> bool:
         self.Index = self.Client.Index(index)
@@ -136,9 +135,11 @@ class PineconeDB:
                 val = metadata[key]
 
                 if (not (type(val) in [int, float, str, bool])):
-                    metadata[key] = str(val)
+                    metadata[key] = json.dumps(val)
+            
             return metadata
         
+
         metadata = StringifyMetadata(metadata)
 
         embeddings = [ element.model_dump()["embedding"] for element in self.EmbeddingManager.CreateEmbeddings(json.dumps(payload))]

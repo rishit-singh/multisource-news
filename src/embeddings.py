@@ -5,7 +5,6 @@ class EmbeddingManager:
         self.Client = AzureOpenAI(api_key=azureOpenAIKey, azure_endpoint=endPoint, api_version=version)
         self.Model = model
 
-
     def CreateEmbeddings(self, input: str):
         response = self.Client.embeddings.create(input=input, model=self.Model)
 
