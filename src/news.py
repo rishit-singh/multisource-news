@@ -19,8 +19,13 @@ class NewsManager:
             
             self.DB.Insert(f"{article["title"]}\n{article["description"]}", article, "main")
 
+    def GetArticleGroups(self, k: int = 10):
+        return self.DB.GetRecords(0, k, "main")
+
     def GetTopArticles(self):
-        self.Articles += self.Client.get_top_headlines(country="us")["articles"]
+        for article in self.Client.get_top_headlines(country="us")["articles"]:
+            if (not article in self.Articles):
+                self.Articles.append(article)
 
         return self.Articles
 

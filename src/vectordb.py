@@ -119,6 +119,22 @@ class PineconeDB:
         if (index):
             self.Index = self.Client.Index(index)
     
+    def GetRecords(self, start: int, end: int, namespace: str):
+        records = []
+
+        i = start
+        
+        for record in self.Index.list(namespace=namespace):
+            if (i >= end):
+                return records
+
+            records.extend(record)
+
+            i += len(record)
+        
+        return records
+        
+
     def Query(self, query: str, k: int = 10, namespace="main"):
         queryEmbedding = self.EmbeddingManager.CreateEmbeddings(query)[0].embedding
 

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 
@@ -9,6 +10,8 @@ from vectordb import VectorDB, PineconeDB
 from embeddings import EmbeddingManager
 
 from tinytune.prompt import prompt_job
+from tinytune.pipeline import Pipeline
+
 from web_search import WebGroqContext, WebGroqMessage
 
 load_dotenv()
@@ -31,42 +34,69 @@ db = PineconeDB(os.getenv("PINECONE_KEY"), embeddings, "news")
 
 manager = NewsManager(os.getenv("NEWS_KEY"), db)
 
-stack = [news["title"] for news in manager.GetAllArticles()]
+stack = [news["title"] for news in manager.GetAllArticles()][:10]
 
-# @prompt_job(id="Extract keywords", context=context) 
-# def ExtractKeywords(id: str, context: WebGroqContext, prevResult):
-#     (context.Prompt(WebGroqMessage("user", 'You are a keyword extractor. You extract 2 most significant keywords from a sentence and return them in form of json. You only give the json, NO backticks, NO explanation. Only JSON in form {"keywords": []}'))
-#             .Prompt(WebGroqMessage("assistant", "Sure"))
-#             .Prompt(WebGroqMessage("user", "Georgia activist steals the show after being introduced by Trump at Atlanta rally: 'Incredible'. Respond in JSON, No explanation, no backticks. And only 2 most significant keywords"))
-#             .Prompt(WebGroqMessage("assistant", '{"keywords": ["Georgia activist", "Atlanta rally"]}'))
-#             .Prompt(WebGroqMessage("user", f"{stack[-1]}. Respond in json. No explanation, no backticks. And only 2 most significant keywords"))
-#             .Run(stream=True))
-#     return context.Messages[-1].Content
+@prompt_job(id="Extract keywords", context=context) 
+def ExtractKeywords(id: str, context: WebGroqContext, prevResult):
+    (context.Prompt(WebGroqMessage("user", 'You are a keyword extractor. You extract 2 most significant keywords from a sentence and return them in form of json. You only give the json, NO backticks, NO explanation. Only JSON in form {"keywords": []}'))
+            .Run(stream=True)
+            .Prompt(WebGroqMessage("user", f"{stack[-1]}. Respond in json. No explanation, no backticks. And only 2 most significant keywords. USE THIS SCHEMA {json.dumps({'keywords': ['keyword1', 'keyword2']})}"))
+            .Run(stream=True))
+            
+    return context.Messages[-1].Content
 
-# resp = ExtractKeywords() 
-# keywords = []
+@prompt_job(id="json", context=context)
+def ExtractJson(id: str, context: WebGroqContext, prevResult: str):
+    regex = r"\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}"
+    return re.findall(regex, prevResult)[-1]
 
-# with open("keywords_unique.json", 'r') as fp:
-#     for keyword in json.loads(fp.read()):
-#         manager.Articles.clear() 
-#         manager.GetArticlesByTopic(keyword)
-#         manager.CreateEmbeddings()
+pipeline = Pipeline(llm=context)
 
+(pipeline.AddJob(ExtractKeywords)
+        .AddJob(ExtractJson))
+
+resp = ExtractKeywords() 
+keywords = []
+
+def SanitizeKeywords(keywords: list[dict]):
+    sanitized: list[dict] = []
+
+    for keyword in keywords:
+        keysLower =  [key.lower() for key in keyword["keywords"]]
+
+        if not(("removed" in keysLower) and ("none" in keysLower) and len(keysLower) < 3):
+            sanitized.append(keyword)
+
+    return sanitized
+
+
+with open("keywords2.json", 'r') as fp:
+    # for keyword in json.loads(fp.read()):
+    #     manager.Articles.clear() 
+    #     manager.GetArticlesByTopic(keyword)
+    #     manager.CreateEmbeddings()
+    keywords = SanitizeKeywords(json.loads(fp.read()))
+
+    for keyword in keywords:
+        manager.GetArticlesByTopic(" ".join(keyword["keywords"]))
+
+    manager.CreateEmbeddings()
+      
     # for _ in range(len(stack)):
-    #     response = json.loads(ExtractKeywords())
-
+    #     print(stack[-1])
+    #     response = json.loads(pipeline.Run())
     #     print(response)
 
     #     keywords.append(response)
 
     #     stack.pop()
-    #     fp.write(json.dumps(keywords))
+    # fp.write(json.dumps(keywords))
 
-
-
-# manager.GetArticlesByTopic(sys.argv[1])
 # # manager.CreateEmbeddings()
-print(json.dumps([match["metadata"] for match in manager.QueryNews(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]))], indent=2))
+# print(json.dumps([match["metadata"] for match in manager.QueryNews(sys.argv[1], int(sys.argv[2]), float(sys.argv[3]))], indent=2))
+
+# print(json.dumps(manager.GetArticleGroups(), indent=2))
+    
 # # objects = manager.QueryNews(sys.argv[1], 2).objects
 
 # for object in objects:
